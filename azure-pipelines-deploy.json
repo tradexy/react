@@ -1,0 +1,30 @@
+trigger: none
+
+variables:
+  vmImageName: 'ubuntu-latest'
+  BuildNumber: '1422'  # Manually specify the build number here
+
+stages:
+- stage: Deploy
+  displayName: Deploy stage
+  jobs:
+  - deployment: Deploy
+    displayName: Deploy
+    environment: Test
+    pool:
+      vmImage: $(vmImageName)
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - download: current
+            artifact: drop
+            patterns: '**/$(BuildNumber).zip'
+          - task: AzureWebApp@1
+            displayName: 'Azure Web App Deploy: webapp-name'
+            inputs:
+              azureSubscription: 'scsptest'
+              appType: webAppLinux
+              appName: 'delete230915'
+              package: $(Pipeline.Workspace)/drop/$(BuildNumber).zip
+              startUpCommand: 'pm2 serve /home/site/wwwroot --spa --no-daemon'
